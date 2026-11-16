@@ -39,17 +39,52 @@ LEGACY='appstore = https://raw.githubusercontent.com/ReCasaOS/_appstore/catalogu
 ORG='appstore = https://recasaos.org/store/recasaos.zip'
 
 CONF="${PREFIX}/etc/casaos/app-management.conf"
-printf '%s\n' '[server]' "${DEAD}" "${USER}" "${LEGACY}" >"${CONF}"
 
-Rewrite_Dead_AppStores
-
-got="$(cat "${CONF}")"
-want="$(printf '%s\n' '[server]' "${ORG}" "${USER}" "${ORG}")"
-[[ "${got}" == "${want}" ]] || fail "fixture: wanted
+assert_conf() {
+    local got want
+    got="$(cat "${CONF}")"
+    want="$(printf '%s\n' "$@")"
+    [[ "${got}" == "${want}" ]] || fail "wanted
 ${want}
 got
 ${got}"
-echo "ok: only the dead zip and the legacy raw default become the org URL"
+}
+
+printf '%s\n' '[server]' "${DEAD}" "${USER}" "${LEGACY}" >"${CONF}"
+Rewrite_Dead_AppStores
+assert_conf '[server]' "${ORG}" "${USER}"
+echo "ok: dead+legacy collapse to one org URL; user store unchanged"
+
+printf '%s\n' "${DEAD}" >"${CONF}"
+Rewrite_Dead_AppStores
+assert_conf "${ORG}"
+echo "ok: dead zip alone becomes the org URL"
+
+printf '%s\n' "${LEGACY}" >"${CONF}"
+Rewrite_Dead_AppStores
+assert_conf "${ORG}"
+echo "ok: legacy raw default alone becomes the org URL"
+
+rm -f "${CONF}"
+Rewrite_Dead_AppStores || fail "missing conf should return 0"
+[[ ! -e "${CONF}" ]] || fail "missing conf must not be created"
+echo "ok: missing conf is left uncreated"
+
+printf '%s\n' keep-me "${DEAD}" >"${CONF}"
+sudo_cmd="${WORK}/fail-cat"
+cat >"${WORK}/fail-cat" <<'EOF'
+#!/usr/bin/env bash
+if [[ "${1-}" == cat ]]; then
+    echo "fail-cat: refusing cat" >&2
+    exit 1
+fi
+exec "$@"
+EOF
+chmod +x "${WORK}/fail-cat"
+Rewrite_Dead_AppStores || fail "cat failure should return 0"
+sudo_cmd=""
+assert_conf keep-me "${DEAD}"
+echo "ok: cat failure does not empty the conf"
 
 grep -qE '^[[:space:]]+Rewrite_Dead_AppStores$' "${INSTALL_SH}" || fail "install.sh never calls Rewrite_Dead_AppStores"
 grep -Fq 'sed -i "s#https://github.com/IceWhaleTech/_appstore/#${CASA_DOWNLOAD_DOMAIN}IceWhaleTech/_appstore/#g"' "${INSTALL_SH}" ||

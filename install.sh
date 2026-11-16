@@ -1506,14 +1506,23 @@ Rewrite_Dead_AppStores() {
     local org='appstore = https://recasaos.org/store/recasaos.zip'
     local dead='appstore = https://github.com/bigbeartechworld/big-bear-casaos/archive/refs/heads/master.zip'
     local legacy='appstore = https://raw.githubusercontent.com/ReCasaOS/_appstore/catalogue/store/recasaos.zip'
-    local tmp line
+    local tmp line src seen_org=0
+    ${sudo_cmd} test -f "${conf}" || return 0
+    src="$(${sudo_cmd} cat "${conf}")" || return 0
     tmp="$(mktemp)"
     while IFS= read -r line || [[ -n "${line}" ]]; do
         case "${line}" in
-            "${dead}" | "${legacy}") printf '%s\n' "${org}" ;;
-            *) printf '%s\n' "${line}" ;;
+            "${org}" | "${dead}" | "${legacy}")
+                if [[ "${seen_org}" -eq 0 ]]; then
+                    printf '%s\n' "${org}"
+                    seen_org=1
+                fi
+                ;;
+            *)
+                printf '%s\n' "${line}"
+                ;;
         esac
-    done < <(${sudo_cmd} cat "${conf}") >"${tmp}"
+    done < <(printf '%s' "${src}") >"${tmp}"
     ${sudo_cmd} cp "${tmp}" "${conf}"
     rm -f "${tmp}"
 }
