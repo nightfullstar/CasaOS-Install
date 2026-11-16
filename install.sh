@@ -1442,6 +1442,7 @@ DownloadAndInstallCasaOS() {
 
     # Modify app store configuration
     sed -i "s#https://github.com/IceWhaleTech/_appstore/#${CASA_DOWNLOAD_DOMAIN}IceWhaleTech/_appstore/#g" "$PREFIX/etc/casaos/app-management.conf"
+    Rewrite_Dead_AppStores
 
     #Download Uninstall Script
     if [[ -f $PREFIX/tmp/casaos-uninstall ]]; then
@@ -1495,6 +1496,26 @@ Check_Service_status() {
             exit 1
         fi
     done
+}
+
+# Exact `appstore =` lines that still name the dead Big Bear zip or the legacy
+# GitHub-raw recasaos.zip become the recasaos.org catalogue. Any other store
+# line, including github.com/ReCasaOS/big-bear-casaos, is left alone.
+Rewrite_Dead_AppStores() {
+    local conf="${PREFIX}/etc/casaos/app-management.conf"
+    local org='appstore = https://recasaos.org/store/recasaos.zip'
+    local dead='appstore = https://github.com/bigbeartechworld/big-bear-casaos/archive/refs/heads/master.zip'
+    local legacy='appstore = https://raw.githubusercontent.com/ReCasaOS/_appstore/catalogue/store/recasaos.zip'
+    local tmp line
+    tmp="$(mktemp)"
+    while IFS= read -r line || [[ -n "${line}" ]]; do
+        case "${line}" in
+            "${dead}" | "${legacy}") printf '%s\n' "${org}" ;;
+            *) printf '%s\n' "${line}" ;;
+        esac
+    done < <(${sudo_cmd} cat "${conf}") >"${tmp}"
+    ${sudo_cmd} cp "${tmp}" "${conf}"
+    rm -f "${tmp}"
 }
 
 # The port the gateway listens on, from its ini file: the key `port` alone. The

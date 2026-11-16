@@ -1257,9 +1257,9 @@ jobs:
           test "${apps}" -gt 250
           unzip -p catalogue.zip catalogue.json | jq -e '.sources | length > 1' >/dev/null
 
-      # The default store is the ReCasaOS catalogue (ReCasaOS/_appstore, branch
-      # catalogue): IceWhale's apps, RoqueOS's and the Big Bear fork's, merged every
-      # night. The box is pointed at it explicitly, whatever AppManagement release is
+      # The default store is the ReCasaOS catalogue at recasaos.org (IceWhale's
+      # apps, RoqueOS's and the Big Bear fork's, merged every night). The box is
+      # pointed at it explicitly, whatever AppManagement release is
       # installed, and has to show more apps than IceWhale's store alone (181), with an
       # app from each source: PsiTransfer (IceWhale; it quotes its port target, which
       # the parser used to refuse), big-bear-dockge (Big Bear fork) and beszel
@@ -1271,7 +1271,7 @@ jobs:
           set -euo pipefail
           sudo cp /etc/casaos/app-management.conf /tmp/app-management.conf.orig
           sudo sed -i '/^appstore = /d' /etc/casaos/app-management.conf
-          echo 'appstore = https://raw.githubusercontent.com/ReCasaOS/_appstore/catalogue/store/recasaos.zip' | sudo tee -a /etc/casaos/app-management.conf >/dev/null
+          echo 'appstore = https://recasaos.org/store/recasaos.zip' | sudo tee -a /etc/casaos/app-management.conf >/dev/null
           grep '^appstore = ' /etc/casaos/app-management.conf
           sudo systemctl restart casaos-app-management
           apps=0

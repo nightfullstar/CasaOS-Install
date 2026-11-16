@@ -63,6 +63,9 @@ jobs:
       - name: Check the port the installer's closing banner shows
         run: bash scripts/test-install-banner.sh
 
+      - name: Check that a dead or legacy appstore line is rewritten to recasaos.org
+        run: bash scripts/test-install-appstore.sh
+
       - name: Check that nobody is offered a release before the install check
         run: bash scripts/test-release-workflow.sh
 
